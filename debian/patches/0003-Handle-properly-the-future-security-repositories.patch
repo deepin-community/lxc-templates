@@ -1,0 +1,81 @@
+From: =?utf-8?q?Pierre-Elliott_B=C3=A9cue?= <peb@debian.org>
+Date: Sat, 17 Oct 2020 22:35:41 +0200
+Subject: Handle properly the future security repositories
+
+---
+ templates/lxc-debian.in | 42 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 39 insertions(+), 3 deletions(-)
+
+diff --git a/templates/lxc-debian.in b/templates/lxc-debian.in
+index 6d25f2c..c8d5272 100644
+--- a/templates/lxc-debian.in
++++ b/templates/lxc-debian.in
+@@ -38,7 +38,7 @@ export PATH=$PATH:/usr/sbin:/usr/bin:/sbin:/bin
+ export GREP_OPTIONS=""
+ 
+ MIRROR=${MIRROR:-http://deb.debian.org/debian}
+-SECURITY_MIRROR=${SECURITY_MIRROR:-http://security.debian.org/}
++SECURITY_MIRROR=${SECURITY_MIRROR:-http://security.debian.org/debian-security}
+ LOCALSTATEDIR="@LOCALSTATEDIR@"
+ LXC_TEMPLATE_CONFIG="@LXCTEMPLATECONFIG@"
+ # Allows the lxc-cache directory to be set by environment variable
+@@ -196,11 +196,45 @@ EOF
+     return 0
+ }
+ 
++get_security_repo() {
++    local release="${1}"; shift
++    local -i release_code=0
++
++    # oldoldstable is too old, let's ignore that case.
++    if [[ "${release}" == "oldoldstable" ]]; then
++        echo "${release}/updates"
++        return 0
++    fi
++
++    # Unstable has no security repo
++    if [[ "${release}" == "unstable" || "${release}" == "sid" || "${release}" == "experimental" ]]; then
++        echo ""
++        return 0
++    fi
++
++    # Extract the release code
++    if [[ "$release" == *"stable" || "$release" == "testing" ]]; then
++        release_code="$(debian-distro-info -r --"${release}")"
++    else
++        release_code="$(debian-distro-info -r --series="${release}")"
++    fi
++
++    # From the release code, get the security repository distro
++    if [ "${release_code}" -ge 11 ]; then
++        echo "${release}-security"
++    else
++        echo  "${release}/updates"
++    fi
++
++    return 0
++}
++
+ write_sourceslist()
+ {
+     local rootfs="$1";  shift
+     local release="$1"; shift
+     local arch="$1";    shift
++    local sec_release="$1"; shift
+ 
+     local prefix="deb"
+     if [ -n "${arch}" ]; then
+@@ -217,9 +251,11 @@ write_sourceslist()
+ ${prefix} $MIRROR          ${release}         main${non_main}
+ EOF
+ 
+-    if [ "$release" != "unstable" -a "$release" != "sid" ]; then
++    sec_release="$(get_security_repo "${release}")"
++
++    if [ -n "${sec_release}" ]; then
+       cat >> "${rootfs}/etc/apt/sources.list" << EOF
+-${prefix} $SECURITY_MIRROR ${release}/updates main${non_main}
++${prefix} $SECURITY_MIRROR ${sec_release} main${non_main}
+ EOF
+     fi
+ }

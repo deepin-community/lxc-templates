@@ -1,0 +1,180 @@
+From: =?utf-8?q?Pierre-Elliott_B=C3=A9cue?= <becue@crans.org>
+Date: Fri, 12 Mar 2021 11:50:00 +0100
+Subject: Fixes path variable in some templates
+
+The behaviour of the path variable is somewhat inconsistent with a
+relevant way of generating containers. path now points to a directory,
+where ${path}/${name} will be created and handle the new container's
+config/rootfs
+---
+ templates/lxc-archlinux.in     | 8 +++++---
+ templates/lxc-centos.in        | 6 ++++--
+ templates/lxc-fedora-legacy.in | 8 +++++---
+ templates/lxc-fedora.in        | 8 +++++---
+ templates/lxc-pld.in           | 7 +++++--
+ templates/lxc-voidlinux.in     | 8 +++++++-
+ 6 files changed, 31 insertions(+), 14 deletions(-)
+
+diff --git a/templates/lxc-archlinux.in b/templates/lxc-archlinux.in
+index f8d4ba0..afa2f11 100644
+--- a/templates/lxc-archlinux.in
++++ b/templates/lxc-archlinux.in
+@@ -206,8 +206,8 @@ usage:
+ Mandatory args:
+   -n,--name           container name, used to as an identifier for that container from now on
+ Optional args:
+-  -p,--path           path to where the container rootfs will be created (${default_path})
+-  --rootfs            path for actual container rootfs, (${default_path}/rootfs)
++  -p,--path           path the directory where the container directory will be created (${default_path})
++  --rootfs            path for actual container rootfs, (${default_path}/{container_name}/rootfs)
+   -P,--packages       preinstall additional packages, comma-separated list
+   -e,--enable_units   enable systemd services, comma-separated list
+   -d,--disable_units  disable systemd services, comma-separated list
+@@ -256,9 +256,11 @@ if [ ${?} -ne 0 ]; then
+ fi
+ 
+ if [ -z "${path}" ]; then
+-    path="${default_path}/${name}"
++    path="${default_path}"
+ fi
+ 
++path="${path}/${name}"
++
+ if [ "${EUID}" != "0" ]; then
+     echo "This script should be run as 'root'"
+     exit 1
+diff --git a/templates/lxc-centos.in b/templates/lxc-centos.in
+index eba5ec8..7145845 100644
+--- a/templates/lxc-centos.in
++++ b/templates/lxc-centos.in
+@@ -708,7 +708,7 @@ usage:
+ Mandatory args:
+   -n,--name         container name, used to as an identifier for that container from now on
+ Optional args:
+-  -p,--path         path to where the container rootfs will be created, defaults to /var/lib/lxc/name.
++  -p,--path         path to where the container directory will be created, defaults to /var/lib/lxc.
+   -c,--clean        clean the cache
+   -R,--release      CentOS release for the new container. If the host is CentOS, then it will default to the host's release.
+      --fqdn         fully qualified domain name (FQDN) for DNS and system naming
+@@ -847,9 +847,11 @@ if [ $? -ne 0 ]; then
+ fi
+ 
+ if [ -z "$path" ]; then
+-    path=$default_path/$name
++    path=$default_path
+ fi
+ 
++path="${path}/${name}"
++
+ if [ -z "$release" ]; then
+     if [ "$is_centos" -a "$centos_host_ver" ]; then
+         release=$centos_host_ver
+diff --git a/templates/lxc-fedora-legacy.in b/templates/lxc-fedora-legacy.in
+index 3ef3415..d42d6a6 100644
+--- a/templates/lxc-fedora-legacy.in
++++ b/templates/lxc-fedora-legacy.in
+@@ -1187,8 +1187,8 @@ usage:
+ Mandatory args:
+   -n,--name         container name, used to as an identifier for that container
+ Optional args:
+-  -p,--path         path to where the container will be created,
+-                    defaults to @LXCPATH@.
++  -p,--path         path to the directory where the container'directory will be
++                    created, defaults to @LXCPATH@.
+   --rootfs          path for actual rootfs.
+   -c,--clean        clean the cache
+   -R,--release      Fedora release for the new container.
+@@ -1348,9 +1348,11 @@ if [ -n "$needed_pkgs" ]; then
+ fi
+ 
+ if [ -z "$path" ]; then
+-    path=$default_path/$name
++    path=$default_path
+ fi
+ 
++path="${path}/${name}"
++
+ if [ -z "$release" ]; then
+     if [ "$is_fedora" -a "$fedora_host_ver" ]; then
+         release=$fedora_host_ver
+diff --git a/templates/lxc-fedora.in b/templates/lxc-fedora.in
+index 51868a6..f6e5191 100644
+--- a/templates/lxc-fedora.in
++++ b/templates/lxc-fedora.in
+@@ -983,8 +983,8 @@ Template options:
+   -h, --help             Print this help text
+       --mask-tmp         Prevent systemd from over-mounting /tmp with tmpfs.
+   -M, --mirror=MIRROR    Fedora mirror to use during installation.
+-  -p, --path=PATH        Path to where the container will be created,
+-                         defaults to ${lxc_path}.
++  -p, --path=PATH        Path to the directory where the container's directory
++                         will be created, defaults to ${lxc_path}.
+   -P, --packages=PKGS    Comma-separated list of additional RPM packages to
+                          install into the container.
+   -R, --release=RELEASE  Fedora release number of the container, defaults
+@@ -1216,9 +1216,11 @@ fi
+ # set container directory
+ if [ -z "${path}" ]
+ then
+-    path="${lxc_path}/${name}"
++    path="${lxc_path}"
+ fi
+ 
++path="${path}/${name}"
++
+ # set container rootfs and configuration path
+ config="${path}/config"
+ if [ -z "${rootfs}" ]
+diff --git a/templates/lxc-pld.in b/templates/lxc-pld.in
+index b748cb8..a333943 100644
+--- a/templates/lxc-pld.in
++++ b/templates/lxc-pld.in
+@@ -319,7 +319,8 @@ usage:
+ Mandatory args:
+   -n,--name         container name, used to as an identifier for that container from now on
+ Optional args:
+-  -p,--path         path to where the container will be created, defaults to @LXCPATH@. The container config will go under @LXCPATH@ in that case
++  -p,--path         path to the directory where the container's directory will be created, defaults to @LXCPATH@.
++                    The container config will go under @LXCPATH@ in that case
+   --rootfs          path for actual rootfs.
+   -c,--clean        clean the cache
+   -R,--release      PLD Linux release for the new container. if the host is PLD Linux, then it will default to the host's release.
+@@ -397,9 +398,11 @@ if [ -n "$needed_pkgs" ]; then
+ fi
+ 
+ if [ -z "$path" ]; then
+-	path=$default_path/$name
++	path=$default_path
+ fi
+ 
++path="${path}/${name}"
++
+ if [ -z "$release" ]; then
+ 	if [ "$is_pld" -a "$pld_host_ver" ]; then
+ 		release=$pld_host_ver
+diff --git a/templates/lxc-voidlinux.in b/templates/lxc-voidlinux.in
+index d74da38..0ba74ef 100644
+--- a/templates/lxc-voidlinux.in
++++ b/templates/lxc-voidlinux.in
+@@ -103,7 +103,7 @@ usage:
+ Mandatory args:
+   -n,--name           container name, used to as an identifier for that container from now on
+ Optional args:
+-  -p,--path           path to where the container rootfs will be created (${default_path})
++  -p,--path           path to the directory where the container's directory will be created (${default_path})
+   --rootfs            path for actual container rootfs, (${default_path}/rootfs)
+   -P,--packages       preinstall additional packages, comma-separated list
+   -c,--config         use specified pacman config when installing container packages
+@@ -152,6 +152,12 @@ if [ ${?} -ne 0 ]; then
+     echo "'xbps-query' command is missing."
+ fi
+ 
++if [ -z "${path}" ]; then
++    path="${default_path}"
++fi
++
++path="${path}/${name}"
++
+ if [ -z "${rootfs_path}" ]; then
+     rootfs_path="${path}/rootfs"
+ fi

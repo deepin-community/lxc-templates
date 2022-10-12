@@ -1,0 +1,4 @@
+0001-lxc-debian-Handle-languages-that-are-only-UTF-8-enco.patch
+0002-Add-references-to-mmdebstrap-and-some-documentation-.patch
+0003-Handle-properly-the-future-security-repositories.patch
+0004-Fixes-path-variable-in-some-templates.patch

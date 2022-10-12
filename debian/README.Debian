@@ -1,0 +1,14 @@
+Unprivileged containers without the download template
+=====================================================
+
+As a non-privileged user:
+
+$ cd .local/share/lxc
+$ mkdir mmdebstrap-unpriv/rootfs -p
+$ mmdebstrap --mode=unshare --components="main contrib non-free" --variant=important buster mmdebstrap-unpriv/rootfs
+
+--variant=important can be replaced by --variant=minbase --include=systemd-sysv
+In the container you should change /etc/hostname
+
+If you rely on a btrfs subvolume or partition, remember creating it before, and
+mounting it on mmdebstrap-unpriv/rootfs.

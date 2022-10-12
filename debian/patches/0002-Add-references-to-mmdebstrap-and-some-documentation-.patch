@@ -1,0 +1,23 @@
+From: =?utf-8?q?Pierre-Elliott_B=C3=A9cue?= <peb@debian.org>
+Date: Sat, 17 Oct 2020 14:44:47 +0200
+Subject: Add references to mmdebstrap and some documentation to use it when
+ creating unprivileged container
+
+---
+ templates/lxc-debian.in | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/templates/lxc-debian.in b/templates/lxc-debian.in
+index f6b9f2c..6d25f2c 100644
+--- a/templates/lxc-debian.in
++++ b/templates/lxc-debian.in
+@@ -26,6 +26,9 @@ for arg in "$@"; do
+     if [ "$arg" = "--mapped-uid" -o "$arg" = "--mapped-gid" ]; then
+         echo "This template can't be used for unprivileged containers." 1>&2
+         echo "You may want to try the \"download\" template instead." 1>&2
++        echo "You can also use mmdebstrap --mode=unshare, and an example is found at" 1>&2
++        echo "https://wiki.debian.org/LXC#Unprivileged_Debian_container_by_mmdebstrap_--mode.3Dunshare " 1>&2
++        echo "or in /usr/share/doc/lxc-templates/README.Debian." 1>&2
+         exit 1
+     fi
+ done
